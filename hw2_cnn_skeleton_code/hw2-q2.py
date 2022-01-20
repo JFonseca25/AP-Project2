@@ -234,7 +234,7 @@ def main():
     plot(epochs, valid_accs, ylabel='Accuracy', name='CNN-validation-accuracy-{}'.format(config))
     
     if (opt.convlayer1 and opt.convlayer2) is not None:
-        conv_layer_1_viz = eval('model.modules().' + opt.convlayer1)
+        conv_layer_1_viz = eval('model.' + opt.convlayer1)
         conv_layer_2_viz = eval('model.' + opt.convlayer2)
         plot_kernels(conv_layer_1_viz, conv_layer_2_viz, name_1='CNN-conv_layer_1_filters-{}'.format(config), name_2='CNN-conv_layer_2_filters-{}'.format(config))
 
