@@ -103,7 +103,9 @@ def val_step(decoder, encoder_out, all_captions, vocab_size, token_to_id, id_to_
     generated_tokens = []
 
     input_word = torch.tensor([token_to_id[START_TOKEN]])
+    input_word = input_word.to(device)
 
+    encoder_out = encoder_out.to(device)
     h, c = decoder.init_hidden_state(encoder_out)
 
     for _ in range(max_len):
@@ -118,12 +120,14 @@ def val_step(decoder, encoder_out, all_captions, vocab_size, token_to_id, id_to_
             generated_tokens.append(id_to_token[top_index])
 
         #next word will be the one with highest prob
-        input_word = torch.tensor([top_index]) 
+        input_word = torch.tensor([top_index])
+        input_word = input_word.to(device)
     
     bleu_4=sentence_bleu(all_captions, generated_tokens)
     return bleu_4,generated_tokens
 
 def plot(plottable, ylabel='', name=''):
+    plt.figure()
     plt.xlabel('Epoch')
     plt.ylabel(ylabel)
     plt.plot(plottable)
@@ -195,6 +199,7 @@ if __name__ == "__main__":
             vocab_size=vocab_size,
             dropout_rate=args.dropout
         )
+        decoder = decoder.to(device)
     else:
         decoder = Decoder(
             decoder_dim=args.decoder_dim,
@@ -202,6 +207,7 @@ if __name__ == "__main__":
             vocab_size=vocab_size,
             dropout_rate=args.dropout
         )
+        decoder = decoder.to(device)
 
     #in this case encoder doesnot need optimizar since we are using we are using pretrained encoder without fine-tuning it
     #just use optimizer for decoder:
