@@ -25,8 +25,36 @@ class CNN(nn.Module):
         idea of how to us pytorch for this have a look at
         https://pytorch.org/docs/stable/nn.html
         """
-        super(CNN).__init__()
-        # Implement me!
+        super(CNN, self).__init__()
+
+        self.convblock1 = nn.Sequential(
+            nn.Conv2d(in_channels=1, out_channels=16, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2)
+        )
+
+        self.convblock2 = nn.Sequential(
+            nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2)
+        )
+
+        self.affine1 = nn.Sequential(
+            nn.Linear(32 * 6 * 6, 600), # (output channels × output width × output height, output features)
+            nn.ReLU()
+        )
+
+        self.dropout = nn.Dropout2d() # p = 0.5
+
+        self.affine2 = nn.Sequential(
+            nn.Linear(600, 120), # (output channels × output width × output height, output features)
+            nn.ReLU()
+        )
+
+        self.output = nn.Sequential(
+            nn.Linear(120, 10), # nr of classes = 10
+            nn.LogSoftmax()
+        )
         
     def forward(self, x):
         """
@@ -44,7 +72,14 @@ class CNN(nn.Module):
         forward pass -- this is enough for it to figure out how to do the
         backward pass.
         """
-        raise NotImplementedError
+        x = self.convblock1(x)
+        x = self.convblock2(x)
+        x = x.view(x.size()[0], -1) # flatten x
+        x = self.affine1(x)
+        x = self.dropout(x)
+        x = self.affine2(x)
+        x = self.output(x)
+        return x
         
 
 def train_batch(X, y, model, optimizer, criterion, **kwargs):
@@ -65,7 +100,18 @@ def train_batch(X, y, model, optimizer, criterion, **kwargs):
     This function should return the loss (tip: call loss.item()) to get the
     loss as a numerical value that is not part of the computation graph.
     """
-    raise NotImplementedError
+    model.train()
+    loss_history = []   # To aid getting the mean of the losses
+
+    optimizer.zero_grad() # zero the gradients
+    y_ = model(X)
+    loss = criterion(y_, y)
+    
+    loss_history.append(loss.item())
+    loss.backward() # compute the gradients
+    optimizer.step() # update weights using the gradients
+
+    return torch.mean(torch.tensor(loss_history)) # return the mean of the losses
 
 
 def predict(model, X):
