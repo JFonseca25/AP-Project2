@@ -1,3 +1,4 @@
+from json import encoder
 import torch.nn as nn
 import torch
 
@@ -17,8 +18,16 @@ class Attention(nn.Module):
         self.softmax = nn.Softmax(dim=1)  # softmax layer to calculate weights
 
     def forward(self, encoder_out, decoder_hidden):
+        wf = self.encoder_att(encoder_out)
+        us = self.decoder_att(decoder_hidden).unsqueeze(1)
 
-        #TODO: your code here
+        g = self.relu(wf.add(us))
+        
+        z = self.full_att(g)
+        
+        attention_weights = self.softmax(z)
+
+        attention_weighted_encoding = torch.bmm(encoder_out.transpose(1, 2), attention_weights)
 
         return attention_weighted_encoding
 
@@ -81,6 +90,22 @@ class DecoderWithAttention(nn.Module):
         return h, c
 
     def forward(self, word, decoder_hidden_state, decoder_cell_state, encoder_out):
-        #TODO: your code here
+        #print("Encoder_out size->", encoder_out.size())
+        #print("Hidden state size ->", decoder_hidden_state.size())
+
+        emb = self.embedding(word)
+        att = self.attention(encoder_out, decoder_hidden_state).squeeze(dim=2)
+
+        #print("Embedding size ->", emb.size())
+        #print("Attention size ->", att.size(), att.dim(), "\n")
+
+        lstm_input = torch.cat((emb, att), dim=1)
+
+        decoder_hidden_state, decoder_cell_state = self.decode_step(lstm_input,
+                                                                    (decoder_hidden_state,
+                                                                     decoder_cell_state))
+        
+        decoder_hidden_state = self.dropout(decoder_hidden_state)
+        scores = self.fc(decoder_hidden_state)
 
         return scores, decoder_hidden_state, decoder_cell_state
