@@ -23,11 +23,13 @@ class Attention(nn.Module):
 
         g = self.relu(wf.add(us))
         
-        z = self.full_att(g)
-        
+        z = self.full_att(g).squeeze(2)
+
         attention_weights = self.softmax(z)
 
-        attention_weighted_encoding = torch.bmm(encoder_out.transpose(1, 2), attention_weights)
+        # (batch_size, 512)
+        attention_weighted_encoding = torch.matmul(encoder_out.transpose(1, 2),
+                                                    attention_weights.unsqueeze(2)).squeeze(2)
 
         return attention_weighted_encoding
 
@@ -90,14 +92,8 @@ class DecoderWithAttention(nn.Module):
         return h, c
 
     def forward(self, word, decoder_hidden_state, decoder_cell_state, encoder_out):
-        #print("Encoder_out size->", encoder_out.size())
-        #print("Hidden state size ->", decoder_hidden_state.size())
-
         emb = self.embedding(word)
-        att = self.attention(encoder_out, decoder_hidden_state).squeeze(dim=2)
-
-        #print("Embedding size ->", emb.size())
-        #print("Attention size ->", att.size(), att.dim(), "\n")
+        att = self.attention(encoder_out, decoder_hidden_state)
 
         lstm_input = torch.cat((emb, att), dim=1)
 
